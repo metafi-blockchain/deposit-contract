@@ -83,7 +83,7 @@ contract EKLDeposit is Ownable, Pausable {
         );
     }
 
-    event Desposit(address from, address token, uint256 amount, uint256 time);
+    event Deposit(address from, address token, uint256 amount, uint256 time);
 
     function deposit(address _token, uint8 _id) external whenNotPaused {
         require(tokens[_token].valid, "Error: token invalid");
