@@ -93,10 +93,10 @@ contract EKLDeposit is Ownable, Pausable {
 
         // IERC20(_token).approve(address(this), amount);
 
-        IERC20(_token).transferFrom(_msgSender(), address(this), amount);
+  
 
         tokens[_token].userDeposit[_msgSender()] += amount;
-
+        IERC20(_token).transferFrom(_msgSender(), address(this), amount);
         emit Desposit(_msgSender(), _token, amount, block.timestamp);
     }
 
