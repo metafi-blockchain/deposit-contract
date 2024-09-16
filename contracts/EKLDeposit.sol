@@ -9,7 +9,7 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 contract EKLDeposit is Ownable, Pausable {
     struct Token {
         mapping(address => uint256) userDeposit;
-        uint256[] packages;
+        mapping(uint256 => uint256) packages;
         bool valid;
     }
     mapping(address => Token) tokens;
@@ -31,6 +31,7 @@ contract EKLDeposit is Ownable, Pausable {
         bool[] memory _valids
     ) external onlyOwner {
         require(_tokens.length == _valids.length, "Error: input invalid");
+       
         for (uint8 i = 0; i < _tokens.length; i++) {
             tokens[_tokens[i]].valid = _valids[i];
         }
@@ -38,28 +39,34 @@ contract EKLDeposit is Ownable, Pausable {
 
     function setPackages(
         address _token,
+        uint256[] memory _ids,
         uint256[] memory _amounts
     ) external onlyOwner {
         require(tokens[_token].valid, "Error: token invalid");
-        require(_amounts.length > 0, "Error: amount empty");
+        require(_ids.length == _amounts.length, "Error: input invalid");
+        require(_ids.length > 0, "Error: ids empty");
 
-        tokens[_token].packages = new uint256[](_amounts.length);
+        // tokens[_token].packages = new uint256[](_amounts.length);
 
-        for (uint8 i = 0; i < _amounts.length; i++) {
+        for (uint8 i = 0; i < _ids.length; i++) {
             require(_amounts[i] > 0, "Error: amount invalid");
-            tokens[_token].packages[i] = _amounts[i];
+            tokens[_token].packages[_ids[i]] = _amounts[i];
         }
     }
 
     function addPackages(
         address _token,
+        uint256[] memory _ids,
         uint256[] memory _amounts
     ) external onlyOwner {
         require(tokens[_token].valid, "Error: token invalid");
+        require(_ids.length == _amounts.length, "Error: input invalid");
+        require(_ids.length > 0, "Error: ids empty");
 
         for (uint8 i = 0; i < _amounts.length; i++) {
             require(_amounts[i] > 0, "Error: amount invalid");
-            tokens[_token].packages.push(_amounts[i]);
+
+            tokens[_token].packages[_ids[i]] = _amounts[i];
         }
     }
 
@@ -83,9 +90,15 @@ contract EKLDeposit is Ownable, Pausable {
         );
     }
 
-    event Deposit(address from, address token, uint256 amount, uint256 time);
+    event Deposit(
+        address from,
+        address token,
+        uint256 id,
+        uint256 amount,
+        uint256 time
+    );
 
-    function deposit(address _token, uint8 _id) external whenNotPaused {
+    function deposit(address _token, uint256 _id) external whenNotPaused {
         require(tokens[_token].valid, "Error: token invalid");
 
         uint256 amount = tokens[_token].packages[_id];
@@ -93,11 +106,12 @@ contract EKLDeposit is Ownable, Pausable {
 
         // IERC20(_token).approve(address(this), amount);
 
-  
-
         tokens[_token].userDeposit[_msgSender()] += amount;
         IERC20(_token).transferFrom(_msgSender(), address(this), amount);
-        emit Desposit(_msgSender(), _token, amount, block.timestamp);
+
+     
+
+        emit Deposit(_msgSender(), _token, _id, amount, block.timestamp);
     }
 
     function getDeposit(
@@ -107,10 +121,15 @@ contract EKLDeposit is Ownable, Pausable {
         return tokens[_token].userDeposit[_user];
     }
 
-    function getTokenInfo(
-        address _token
-    ) external view returns (bool, uint256[] memory) {
-        return (tokens[_token].valid, tokens[_token].packages);
+    function getTokenSupport(address _token) external view returns (bool) {
+        return tokens[_token].valid;
+    }
+
+    function getTokenAmount(
+        address _token,
+        uint256 _id
+    ) external view returns (uint256) {
+        return tokens[_token].packages[_id];
     }
 
     function getDeposit(address _token) public view returns (uint256) {
